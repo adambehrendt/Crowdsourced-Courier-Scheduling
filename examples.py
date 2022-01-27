@@ -19,9 +19,11 @@ def example(inhomogeneous=False):
 
 	# Make K realizations for a random row (jth) of the dataset
 	if not inhomogeneous:
-		X = np.genfromtxt('data/data_homogeneous.csv', delimiter=',')
+		X = np.genfromtxt('data/data_homogenous.csv', delimiter=',')
+		print(len(X))
+		quit()
 	else:
-		X = np.genfromtxt('data/data_inhomogeneous.csv', delimiter=',')
+		X = np.genfromtxt('data/data_inhomogenous.csv', delimiter=',')
 
 	j = stats.randint(0, len(X))
 
@@ -59,3 +61,5 @@ def example(inhomogeneous=False):
 				ad_hoc_set[k] = instance_generator.gen_inhomogeneous_arrivals(const_rate, T+S, num_periods)
 
 	return realization_set, ad_hoc_set
+
+example()

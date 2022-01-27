@@ -8,22 +8,9 @@ import random
 
 class Vehicle():
     """
-    Stores each information about a particular vehicle
+    Stores information about a particular vehicle
+    """
 
-    Attributes:
-        origin_list: The locations of the all the stores
-        current_loc: The vehicle's current location, Tuple
-        current_task: List of tasks that the vehicle is assinged to (may be more than one due to bundling),
-        where each task is a list of information about that task.
-        current_index: The current index of the task being completed in the current_task list
-        idle_time: Running count of minutes idle (defined as sitting at depot with no assignments)
-        pickup: Boolean which is true if the vehicle picked up its bundle and false if it has not. Default is
-        false when it has no assigned tasks.
-        time_until_loaded: Time until the vehicle is loaded if loaded is False and current_task is not None
-        loaded: Boolean indicated whether or not vehicle has finished loading a task or bundle
-        speed: Unit speed of the vehicle, changed over the course of the simulation given the speed_list
-        active: Boolean which is true when the vehicle is deliverying or returning to depot, false otherwise.
-        """
     def __init__(self, index, origin_list, start_loc, speed, start_time, end_time):
         self.index = index
         self.start_time = start_time
@@ -37,28 +24,28 @@ class Vehicle():
 
     def take_step(self, current_time, time_jump, order_list):
         """
-        Determines and executes vehicle action based on attributed. Gets next location and updates vehicle attributes.
+        Determines and executes vehicle action based on attributes. Gets next location and updates vehicle attributes.
 
         Args: 
             current_time: Current time in the simulation
             time_jump: Length of time before the next simulation event (the time block we are moving through currently)
-            task_list: The global task list of the simulation. Allows us to update this as we complete/pickup tasks
+            order_list: The global task list of the simulation. Allows us to update this as we complete/pickup tasks
 
         Returns:
             Nothing. Simply updates vehicle attributes and global task list appropriately.
         """
 
-        # Do the route. if there is no route or you've completed it then we should go to the center of the circle
+        # Do the route. if there is no route or you've completed it then we should go to the center of the service region
         if self.route_index == len(self.route):
             self.current_loc = utils.interpolate(self.current_loc, (0, 0), self.speed, time_jump)
         else:
             next_waypoint = self.route[self.route_index]
             previous_wps = self.route[0:self.route_index]
-            # Checking if i have to wait at my location
+            # Checking if we have to wait at the location
             if self.current_loc in [prev_wp[1] for prev_wp in previous_wps]:
                 latest_pickup_time = max([prev_wp[2] for prev_wp in previous_wps])
                 self.wait_time = max(0, latest_pickup_time - current_time)
-            # If dont need to wait then go for it
+            # If dont need to wait then make the delivery and start next order
             if self.wait_time == 0:
                 self.current_loc = utils.interpolate(self.current_loc, next_waypoint[1], self.speed, time_jump)
                 if self.current_loc == next_waypoint[1]:
@@ -72,8 +59,6 @@ class Vehicle():
 
                     grouped_waypoints = self.route[self.route_index:self.route_index+num_wp]
 
-                    #grouped_waypoints = [(list(g)) for k,g in groupby(self.route, key=lambda x: x[1])][0]
-                    #num_wp = len(grouped_waypoints)
                     for wp in grouped_waypoints:
                         if wp[0]:
                             order_list[wp[3]].actual_pickup_time = current_time + time_jump
@@ -82,7 +67,7 @@ class Vehicle():
                     self.route_index += num_wp
                 else:
                     pass
-            # If you have to wait then do nothing. Since we check for the nexct time that the active vehicles waiting is over we should be fine.
+            # If you have to wait then do nothing.
             else:
                 pass
 
@@ -94,13 +79,15 @@ def tt(x, y, V):
 
 
 def cheapest_insertion(R, current_time, current_loc, V, order, vehicle_id, shift_end):
+    """
+    Given the route of a vehicle and its current location, find the cheapest place to insert the pickup and delivery of an order.
+    """
     # order = [(1, (x, y), e, id), (0, (x, y), l, id)]
     # 1 for pickup 0 for delivery, (x,y) location, e is placement time, l is deadline, id is id of order
     if len(R) == 0:
         final_result = [[(0, 1), tt(current_loc, order[0][1], V)+tt(current_loc, order[1][1], V), vehicle_id]]
     else:
         R.insert(0, (1, current_loc, 0, None))
-        # PICKUP INSERTIONS NEED TO ABIDE BY THE THING THIS IS AUTO CHECKED BUT COULD INCREASE EFFICIENCY IF I PRE-CHECKED??
         potential_pickup_insertions = range(1, len(R)+1, 1)
         feasible_pickup_insertions = insertion_helper(potential_pickup_insertions, R, order[0], V, shift_end, current_time)
         final_result = []
@@ -118,6 +105,10 @@ def cheapest_insertion(R, current_time, current_loc, V, order, vehicle_id, shift
 
 
 def insertion_helper(insertion_points, R, point, V, shift_end, current_time):
+    """
+    Helper function for the cheapest insertion
+    """
+
     n = len(R)
     feasible_insertions = []
     for i in insertion_points:
@@ -149,6 +140,10 @@ def insertion_helper(insertion_points, R, point, V, shift_end, current_time):
 
 
 def assign_to_vehicles(vehicle_list, order, current_time):
+    """
+    Assigns an order to the vehicle in the vehicle_list that can accomplish it the cheapest.
+    """
+
     inserts = []
     order_info = [(1, order.pickup_loc, order.pickup_time, order.index), (0, order.delivery_loc, order.deadline, order.index)]
     for v in vehicle_list:
@@ -170,24 +165,13 @@ def assign_to_vehicles(vehicle_list, order, current_time):
         return True
     else:
         return False
-
-
-def make_origins(num_origins, r):
-    if num_origins == 1:
-        return [(0,0)]
-    else:
-        origin_list = [None for _ in range(num_origins)]
-        theta = (360/num_origins)*(np.pi/180)
-        for i in range(num_origins):
-            angle = (i+1)*theta
-            origin_list[i] = (np.cos(angle)*(r/2), np.sin(angle)*(r/2))
-    return origin_list
     
 
 def run_sim(T, V, service_level, penalty_cost, shift_list, origin_list, order_list, num_periods, ad_hoc_wage, ad_hoc_list):
-    # BASICALLY at the start of all this we should look at our order list, for each period we should maintain
-    # a known ahead of time list for initial route creation which can include pre-known orders or orders
-    # that were dynamically realized in previous
+    """
+    Agent based, event driven simulation which returns the cost of expired orders, ad-hoc couriers and provides
+    the number of orders that expired in each time period
+    """
 
     period_length = T/num_periods
 
@@ -220,10 +204,6 @@ def run_sim(T, V, service_level, penalty_cost, shift_list, origin_list, order_li
         ### TERMINATION CHECK ###
 
         if time == T:
-            #for v in vehicle_list:
-            #    if len(v.route) == 0:
-            #        print(v.start_time)
-            #        print(v.end_time)
             expired_cost = penalty_cost*max((len(expired_order_list) - np.floor((1-service_level)*N)), 0.0)
             ad_hoc_cost = ad_hoc_wage*len(ad_hoc_order_list)
             period_score = [0 for _ in range(num_periods)]
@@ -271,7 +251,6 @@ def run_sim(T, V, service_level, penalty_cost, shift_list, origin_list, order_li
 
         ### AD-HOC BLOCK ###
 
-        # Just select randomly from the list of known unassigned orders for the number of drivers that arrived!
         if ad_hoc_list is None:
             pass
         else:
@@ -298,7 +277,7 @@ def run_sim(T, V, service_level, penalty_cost, shift_list, origin_list, order_li
 
         ### EVENT BASED TIME JUMP BLOCK ###
 
-        # Time till end of horizon
+        # Time until end of horizon
         time_jump = T-time
 
         # Time until next task becomes available

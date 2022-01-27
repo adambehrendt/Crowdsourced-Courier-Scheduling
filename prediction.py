@@ -12,6 +12,11 @@ import time
 
 
 class DiscretePredictor:
+    """
+    This class is essentially just a wrapper for a keras model
+    We do this to seamlessly implement either a traditional neural net (ANN) 
+    or a recurrent version (RANN), as described in our paper.
+    """
     def __init__(self, in_dim, out_dim, filename, model_type) -> None:
         self.in_dim = in_dim
         self.out_dim = out_dim
@@ -19,6 +24,10 @@ class DiscretePredictor:
         self.model_type = model_type
 
     def make_rolling_prediction(self, X, num_inputs, num_outputs, history_length):
+        """
+        Predicts each entry  of z individually.
+        """
+
         y = [0 for _ in range(num_outputs)]
         for j in range(num_outputs):
             X_rolling = np.zeros(num_inputs+history_length+1+1)
@@ -36,12 +45,15 @@ class DiscretePredictor:
             X_rolling[num_inputs+1+history_length] = j
             #X_rolling_formatted = np.reshape(X, (X_rolling.shape[0], 1, X_rolling.shape[1]))
 
-            #IF MODEL IS KERAS ADD BACK THE ANOTHER [0]
             y[j] = self.model.predict(np.array([X_rolling]))[0]
 
         return y
 
     def predict(self, X, history_length):
+        """
+        Predicts the vector z given data X.
+        """
+
         if self.model_type == 'one_shot':
             #X_formatted = np.reshape(X, (X.shape[0], 1, X.shape[1]))
             #X = X.reshape(1, -1)
@@ -57,6 +69,10 @@ class DiscretePredictor:
         return y
 
 def make_one_shot_nn(X_train, X_test, y_train, y_test, in_dim, out_dim, n_epochs, hidden_nodes, es=None):
+    """
+    Generates an ANN.
+    """
+
     #X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
     model = Sequential()
     model.add(Dense(hidden_nodes[0], input_dim=in_dim, activation='relu'))
@@ -78,6 +94,10 @@ def make_one_shot_nn(X_train, X_test, y_train, y_test, in_dim, out_dim, n_epochs
 
 
 def make_rolling_nn(X_train, X_test, y_train, y_test, in_dim, n_epochs, hidden_nodes, es=None):
+    """
+    Generates a RANN.
+    """
+
     #X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
     model = Sequential()
     model.add(Dense(hidden_nodes[0], input_dim=in_dim, activation='relu'))
@@ -101,6 +121,10 @@ def make_rolling_nn(X_train, X_test, y_train, y_test, in_dim, n_epochs, hidden_n
 
 
 def make_rolling_data(X, y, num_inputs, history_length):
+    """
+    Converts input (X) and output (required courier vector z) into form needed for the RANN.
+    """
+
     mult = len(y[0])
     count = 0
     X_rolling = np.zeros((len(X)*mult, num_inputs+history_length+1+1))

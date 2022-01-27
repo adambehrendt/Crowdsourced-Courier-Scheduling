@@ -4,6 +4,9 @@ import random
 
 
 class Order():
+    """
+    The class for how we store the properties of an individual order.
+    """
     def __init__(self, placement_time, pickup_time, deadline, origin_idx, pickup_loc, delivery_loc, index):
         self.placement_time = placement_time
         self.pickup_time = pickup_time
@@ -19,6 +22,9 @@ class Order():
 
 
 def gen_poisson_arrivals(rate, T, start=0):
+    """
+    Generate a poisson arrival sequence.
+    """
     k = 0
     t = start
     arrivals = []
@@ -35,6 +41,9 @@ def gen_poisson_arrivals(rate, T, start=0):
 
 
 def gen_inhomogeneous_arrivals(rate, T, num_periods):
+    """
+    Generate an inhomogenous poisson arrival sequence.
+    """
     period_length = T/num_periods
     arrivals = []
     for p in range(num_periods):
@@ -45,6 +54,9 @@ def gen_inhomogeneous_arrivals(rate, T, num_periods):
 
 
 def gen_random_order_list(N_rv, placement_rv, pickup_histogram, window_rv, distance_rv, origin_rv, origin_list, num_known):
+    """
+    Given distributional information, generate a list of orders.
+    """
     num_known = int(num_known)
 
     if type(N_rv) != int:
