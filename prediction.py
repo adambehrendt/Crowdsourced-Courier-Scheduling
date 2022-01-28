@@ -9,6 +9,18 @@ from typing import List, Tuple
 import sys
 import pickle
 import time
+import keras.callbacks
+
+
+class MyThresholdCallback(keras.callbacks.Callback):
+    def __init__(self, threshold):
+        super(MyThresholdCallback, self).__init__()
+        self.threshold = threshold
+
+    def on_epoch_end(self, epoch, logs=None): 
+        loss = logs["loss"]
+        if loss <= self.threshold:
+            self.model.stop_training = True
 
 
 class DiscretePredictor:

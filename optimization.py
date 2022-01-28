@@ -197,7 +197,7 @@ def solve_SAA(T, S_max, V, service_level, penalty_cost, fixed_wage, origin_list,
 			# When width=1 and delta=1, we move by one courier in one period at a time.
 			# Here we provide an example where depending on the number of expired orders (the array we refer to as the total_period_score), the width and delta changes
 			# As iterations continue, we eventually converge to width=1 and delta=1
-			width = max(1, int(np.ceil((sum(total_period_score)/num_periods)/(.75*K))))
+			width = max(1, int(np.ceil((sum(total_period_score)/num_periods)/(1.0*K))))
 			idx, val = max_sum_n(total_period_score, width)
 			delta = max(1, int(np.floor(val/(50*K))))
 			for i in range(idx, idx+width):
