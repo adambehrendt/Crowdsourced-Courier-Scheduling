@@ -31,7 +31,7 @@ def example(inhomogeneous=False):
 	# Lets use a single row (representing the distribution of an operational period) to generate some
 	# realizations of order sets and ad-hoc courier arrival sequences.
 
-	K = 50
+	K = 10
 	j = np.random.randint(0, len(X))
 
 	# Extract distributional info
